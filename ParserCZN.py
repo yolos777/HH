@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import time
 from selenium import webdriver
 import requests
+import random
 
 
 
@@ -72,16 +73,17 @@ with open ('vacancy_links_list.txt') as file:
     vacancy_content = []
     count = 0
 
-    with open('data_2.csv', 'w', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(
-                (
-                    'vacancy_title',
-                    'vacancy_salary',
-                    'vacancy_experience',
-                    'skill_list'
-                )
+    with open('data.csv', 'w', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(
+            (
+                'Наименование вакансии',
+                'Минимальная зарплата',
+                'Максимальная зарплата',
+                'Требуемый опыт',
+                'Ключевые навыки'
             )
+        )
 
     for url_line in url_lines:
         src = requests.get(url=url_line, headers=headers)
@@ -89,36 +91,49 @@ with open ('vacancy_links_list.txt') as file:
 
         q = BeautifulSoup(src_cont, 'lxml')
         try:
-            vacancy_title = q.find('div', class_ = 'vacancy-title').find('h1').get_text()
+            vacancy_title = q.find('div', class_='vacancy-title').find('h1').get_text()
         except:
             vacancy_title = None
         try:
-            vacancy_salary = q.find('div', class_ = 'vacancy-title').find('span').text.replace("&nbsp;","").replace("\xa0","").split(' ')
-            salary_ammount = vacancy_salary[1]
+            vacancy_salary = q.find('div', class_='vacancy-title').find('span').text.replace("&nbsp;", "").replace(
+                "\xa0", "").split(' ')
         except:
             vacancy_salary = None
+        print(vacancy_salary)
+        if vacancy_salary is not None and len(vacancy_salary) > 1:
+            min = vacancy_salary[1]
+            if len(vacancy_salary) > 5:
+                max = vacancy_salary[3]
+            else:
+                max = 0
+        else:
+            min = 0
+            max = 0
+
         try:
-            vacancy_experience = q.find(class_ = re.compile('vacancy-description')).find('span').get_text()
+            vacancy_experience = q.find(class_=re.compile('vacancy-description')).find('span').get_text()
         except:
             vacancy_experience = None
         skill_list = []
         try:
-            vacancy_skills = q.find(class_ = 'bloko-tag-list').find_all('span')
+            vacancy_skills = q.find(class_='bloko-tag-list').find_all('span')
             for i in vacancy_skills:
                 skill = i.text.replace("\xa0", "")
                 skill_list.append(skill)
         except:
             vacancy_skills = None
-
-        with open('data_2.csv', 'a', encoding='utf-8') as file:
+        if vacancy_title is not None:
+            with open('data.csv', 'a', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 writer.writerow(
                     (
                         vacancy_title,
-                        salary_ammount,
+                        min,
+                        max,
                         vacancy_experience,
                         skill_list
                     )
                 )
-        count += 1
-        print(f'#{count} link is done!')
+            count += 1
+            print(f'#{count} link is done!')
+            time.sleep(random.randrange(2, 4))
